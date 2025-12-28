@@ -148,8 +148,46 @@ public sealed record EncounterTrade4PID : IEncounterable, IEncounterMatch, IEnco
 
     #region Matching
 
-    public bool IsTrainerMatch(PKM pk, ReadOnlySpan<char> trainer, int language) => (uint)language < TrainerNames.Length && trainer.SequenceEqual(TrainerNames.Span[language]);
-    public bool IsNicknameMatch(PKM pk, ReadOnlySpan<char> nickname, int language) => (uint)language < Nicknames.Length && nickname.SequenceEqual(Nicknames.Span[language]);
+    public bool IsTrainerMatch(PKM pk, ReadOnlySpan<char> trainer, int language)
+    {
+        // First try normal language match
+        if ((uint)language < TrainerNames.Length && trainer.SequenceEqual(TrainerNames.Span[language]))
+            return true;
+        
+        // For Gen4 with Chinese support enabled, also try Chinese match
+        if (pk.Format == 4 && ParseSettings.Settings.ChineseSupport.Enabled && StringConverter.HasEastAsianScriptCharacters(trainer))
+        {
+            // Try Chinese Simplified (LanguageID.ChineseS = 9)
+            if (TrainerNames.Length > 9 && trainer.SequenceEqual(TrainerNames.Span[9]))
+                return true;
+            // Try Chinese Traditional (LanguageID.ChineseT = 10)
+            if (TrainerNames.Length > 10 && trainer.SequenceEqual(TrainerNames.Span[10]))
+                return true;
+        }
+        
+        return false;
+    }
+    
+    public bool IsNicknameMatch(PKM pk, ReadOnlySpan<char> nickname, int language)
+    {
+        // First try normal language match
+        if ((uint)language < Nicknames.Length && nickname.SequenceEqual(Nicknames.Span[language]))
+            return true;
+        
+        // For Gen4 with Chinese support enabled, also try Chinese match
+        if (pk.Format == 4 && ParseSettings.Settings.ChineseSupport.Enabled && StringConverter.HasEastAsianScriptCharacters(nickname))
+        {
+            // Try Chinese Simplified (LanguageID.ChineseS = 9)
+            if (Nicknames.Length > 9 && nickname.SequenceEqual(Nicknames.Span[9]))
+                return true;
+            // Try Chinese Traditional (LanguageID.ChineseT = 10)
+            if (Nicknames.Length > 10 && nickname.SequenceEqual(Nicknames.Span[10]))
+                return true;
+        }
+        
+        return false;
+    }
+    
     public string GetNickname(int language) => Nicknames.Span[(uint)language < Nicknames.Length ? language : 0];
 
     public bool IsMatchExact(PKM pk, EvoCriteria evo)

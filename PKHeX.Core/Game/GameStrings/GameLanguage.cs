@@ -10,8 +10,8 @@ namespace PKHeX.Core;
 /// </summary>
 public static class GameLanguage
 {
-    public const string DefaultLanguage = "en"; // English
-    public const int DefaultLanguageIndex = 1;
+    public const string DefaultLanguage = "zh-Hans"; // Simplified Chinese (temporarily for testing)
+    public const int DefaultLanguageIndex = 8; // Index for zh-Hans in LanguageCodes array
 
     /// <summary>
     /// Language codes supported; mirrors <see cref="ProgramLanguage"/>.

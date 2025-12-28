@@ -46,10 +46,29 @@ public sealed class TrainerNameVerifier : Verifier
         {
             VerifyOTGB(data);
         }
-        else if (trainer.Length > Legal.GetMaxLengthOT(enc.Generation, (LanguageID)pk.Language))
+        else
         {
-            if (!IsEdgeCaseLength(pk, enc, trainer))
-                data.AddLine(Get(Severity.Invalid, OTLong));
+            // Check if Chinese trainer names are allowed for non-Chinese versions
+            var allowChinese = ParseSettings.Settings.ChineseSupport.Enabled;
+            var isChineseLanguage = pk.Language is (int)LanguageID.ChineseS or (int)LanguageID.ChineseT;
+            var hasChineseChars = StringConverter.HasEastAsianScriptCharacters(trainer);
+
+            // If Chinese characters are present but language is not Chinese, check the setting
+            if (hasChineseChars && !isChineseLanguage && allowChinese)
+            {
+                // Use Chinese length limits when Chinese characters are present
+                var maxLength = Legal.GetMaxLengthOT(enc.Generation, LanguageID.ChineseS);
+                if (trainer.Length > maxLength)
+                {
+                    if (!IsEdgeCaseLength(pk, enc, trainer))
+                        data.AddLine(Get(Severity.Invalid, OTLong));
+                }
+            }
+            else if (trainer.Length > Legal.GetMaxLengthOT(enc.Generation, (LanguageID)pk.Language))
+            {
+                if (!IsEdgeCaseLength(pk, enc, trainer))
+                    data.AddLine(Get(Severity.Invalid, OTLong));
+            }
         }
 
         if (ParseSettings.Settings.WordFilter.IsEnabled(pk.Format))
@@ -116,7 +135,7 @@ public sealed class TrainerNameVerifier : Verifier
 
         if (trainer.Length == 0)
         {
-            if (pk is SK2 {TID16: 0, IsRental: true})
+            if (pk is SK2 { TID16: 0, IsRental: true })
             {
                 data.AddLine(Get(Severity.Fishy, OTShort));
             }

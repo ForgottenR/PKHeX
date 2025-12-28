@@ -127,7 +127,7 @@ public sealed partial class SAV_Inventory : Form
         if (HasFreeSpace)
             dgv.Columns.Add(GetCheckColumn(ColumnFreeSpace = dgv.Columns.Count, "Free"));
         if (HasFreeSpaceIndex)
-            dgv.Columns.Add(GetCountColumn(pouch, true, ColumnFreeSpaceIndex = dgv.Columns.Count, "Free"));
+            dgv.Columns.Add(GetCountColumn(pouch, true, ColumnFreeSpaceIndex = dgv.Columns.Count, "Free", typeof(uint)));
         if (HasNewShop)
             dgv.Columns.Add(GetCheckColumn(ColumnNEWShop = dgv.Columns.Count, "Shop"));
         if (HasHeld)
@@ -141,6 +141,11 @@ public sealed partial class SAV_Inventory : Form
         if (items.Length != 0)
             dgv.Rows.Add(items.Length);
         dgv.CancelEdit();
+
+        // Add type-safe validation and parsing for numeric columns
+        AttachNumericValidation(dgv, ColumnCount, typeof(int));
+        if (HasFreeSpaceIndex)
+            AttachNumericValidation(dgv, ColumnFreeSpaceIndex, typeof(uint));
 
         return dgv;
     }
@@ -184,18 +189,96 @@ public sealed partial class SAV_Inventory : Form
         FlatStyle = Application.IsDarkModeEnabled ? FlatStyle.System : FlatStyle.Flat,
     };
 
-    private static DataGridViewTextBoxColumn GetCountColumn(InventoryPouch pouch, bool HaX, int c, string name = "Count")
+    private static DataGridViewTextBoxColumn GetCountColumn(InventoryPouch pouch, bool HaX, int c, string name = "Count", Type? valueType = null)
     {
         var dgvIndex = new DataGridViewTextBoxColumn
         {
             HeaderText = name,
             DisplayIndex = c,
             Width = 45,
-            DefaultCellStyle = {Alignment = DataGridViewContentAlignment.MiddleCenter},
+            DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter },
+            ValueType = valueType ?? typeof(int),
         };
         if (!HaX)
             dgvIndex.MaxInputLength = (int)(Math.Log10(Math.Max(1, pouch.MaxCount)) + 1);
         return dgvIndex;
+    }
+
+    private static void AttachNumericValidation(DataGridView dgv, int columnIndex, Type numericType)
+    {
+        // Parse string input to numeric type when editing ends
+        dgv.CellParsing += (sender, e) =>
+        {
+            if (e.ColumnIndex != columnIndex || e.RowIndex < 0)
+                return;
+
+            // If value is already the correct numeric type, no parsing needed
+            if (numericType == typeof(uint) && e.Value is uint)
+                return;
+            if (numericType == typeof(int) && e.Value is int)
+                return;
+
+            var value = e.Value?.ToString();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                e.Value = numericType == typeof(uint) ? (object)0u : 0;
+                e.ParsingApplied = true;
+                return;
+            }
+
+            if (numericType == typeof(uint))
+            {
+                if (uint.TryParse(value, out var uintValue))
+                {
+                    e.Value = uintValue;
+                    e.ParsingApplied = true;
+                }
+            }
+            else // int
+            {
+                if (int.TryParse(value, out var intValue))
+                {
+                    e.Value = intValue;
+                    e.ParsingApplied = true;
+                }
+            }
+        };
+
+        // Validate that input is numeric before accepting the edit
+        dgv.CellValidating += (sender, e) =>
+        {
+            if (e.ColumnIndex != columnIndex || e.RowIndex < 0)
+                return;
+
+            var value = e.FormattedValue?.ToString();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                e.Cancel = true;
+                dgv.Rows[e.RowIndex].ErrorText = "Value must be a number.";
+                return;
+            }
+
+            bool isValid = numericType == typeof(uint)
+                ? uint.TryParse(value, out _)
+                : int.TryParse(value, out _);
+
+            if (!isValid)
+            {
+                e.Cancel = true;
+                dgv.Rows[e.RowIndex].ErrorText = "Value must be a number.";
+            }
+            else
+            {
+                dgv.Rows[e.RowIndex].ErrorText = string.Empty;
+            }
+        };
+
+        // Clear error text when editing starts
+        dgv.CellBeginEdit += (sender, e) =>
+        {
+            if (e.ColumnIndex == columnIndex && e.RowIndex >= 0)
+                dgv.Rows[e.RowIndex].ErrorText = string.Empty;
+        };
     }
 
     private void LoadAllBags()

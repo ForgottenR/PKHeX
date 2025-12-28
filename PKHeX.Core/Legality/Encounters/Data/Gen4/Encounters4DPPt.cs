@@ -15,7 +15,23 @@ internal static class Encounters4DPPt
     internal static readonly EncounterArea4[] SlotsPt = EncounterArea4.GetAreas(Get("pt", "pt"u8), Pt);
 
     private const string tradeDPPt = "tradedppt";
-    private static readonly string[][] TradeNames = Util.GetLanguageStrings8(tradeDPPt);
+    private static readonly string[][] TradeNames = LoadTradeNamesWithChinese();
+
+    private static string[][] LoadTradeNamesWithChinese()
+    {
+        var names = Util.GetLanguageStrings8(tradeDPPt);
+        // Add Chinese support for fan-translated ROMs
+        var chineseNames = Util.GetStringList(tradeDPPt, "zh-Hans");
+        if (chineseNames.Length > 0)
+        {
+            var extended = new string[11][];
+            System.Array.Copy(names, extended, names.Length);
+            extended[9] = chineseNames; // ChineseS
+            extended[10] = chineseNames; // ChineseT (use simplified for now)
+            return extended;
+        }
+        return names;
+    }
 
     #region Static Encounter/Gift Tables
 

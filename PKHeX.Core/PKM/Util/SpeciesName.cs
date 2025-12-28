@@ -24,7 +24,7 @@ public static class SpeciesName
         Util.GetSpeciesList("ko"), // 8
         Util.GetSpeciesList("zh-Hans"), // 9 Simplified
         Util.GetSpeciesList("zh-Hant"), // 10 Traditional
-        Util.GetSpeciesList("es-419"), // 11 Spanish 
+        Util.GetSpeciesList("es-419"), // 11 Spanish
     ];
 
     /// <summary>
@@ -34,13 +34,13 @@ public static class SpeciesName
     private static string GetEggName(int language) => language switch
     {
         (int)LanguageID.Japanese => "タマゴ",
-        (int)LanguageID.English  => "Egg",
-        (int)LanguageID.French   => "Œuf",
-        (int)LanguageID.Italian  => "Uovo",
-        (int)LanguageID.German   => "Ei",
+        (int)LanguageID.English => "Egg",
+        (int)LanguageID.French => "Œuf",
+        (int)LanguageID.Italian => "Uovo",
+        (int)LanguageID.German => "Ei",
 
-        (int)LanguageID.Spanish  => "Huevo",
-        (int)LanguageID.Korean   => "알",
+        (int)LanguageID.Spanish => "Huevo",
+        (int)LanguageID.Korean => "알",
         (int)LanguageID.ChineseS => "蛋",
         (int)LanguageID.ChineseT => "蛋",
         (int)LanguageID.SpanishL => "Huevo",
@@ -104,13 +104,36 @@ public static class SpeciesName
     /// <param name="language">Language ID of the Pokémon</param>
     /// <param name="generation">Generation specific formatting option</param>
     /// <returns>Generation specific default species name</returns>
-    public static string GetSpeciesNameGeneration(ushort species, int language, byte generation) => generation switch
+    public static string GetSpeciesNameGeneration(ushort species, int language, byte generation)
     {
-        <= 4 => GetSpeciesName1234(species, language, generation),
-        5 when species is (int)Species.Farfetchd && IsApostropheFarfetchdLanguage(language) => "Farfetch'd", // Gen5 does not have slanted apostrophes.
-        7 when language == (int) LanguageID.ChineseS => GetSpeciesName7ZH(species, language),
-        _ => GetSpeciesName(species, language),
-    };
+        // Check if we should use Chinese Pokemon names from resources
+        if (ParseSettings.Settings.ChineseSupport.Enabled)
+        {
+            // If the language is not Chinese but we want to use Chinese names, try Chinese first
+            if (language is not ((int)LanguageID.ChineseS or (int)LanguageID.ChineseT))
+            {
+                // Try to get Chinese name, but only if it's available
+                var chineseName = GetSpeciesName(species, (int)LanguageID.ChineseS);
+                if (!string.IsNullOrEmpty(chineseName) && species != 0)
+                {
+                    return GetSpeciesNameForGeneration(species, (int)LanguageID.ChineseS, generation, chineseName);
+                }
+            }
+        }
+
+        return GetSpeciesNameForGeneration(species, language, generation, GetSpeciesName(species, language));
+    }
+
+    private static string GetSpeciesNameForGeneration(ushort species, int language, byte generation, string baseName)
+    {
+        return generation switch
+        {
+            <= 4 => GetSpeciesName1234(species, language, generation),
+            5 when species is (int)Species.Farfetchd && IsApostropheFarfetchdLanguage(language) => "Farfetch'd", // Gen5 does not have slanted apostrophes.
+            7 when language == (int)LanguageID.ChineseS => GetSpeciesName7ZH(species, language),
+            _ => baseName,
+        };
+    }
 
     /// <inheritdoc cref="GetSpeciesNameGeneration"/>
     /// <summary>
@@ -132,11 +155,28 @@ public static class SpeciesName
     /// </summary>
     /// <param name="language">Language ID of the Pokémon</param>
     /// <param name="generation">Generation specific formatting option</param>
-    public static string GetEggName(int language, byte generation) => generation switch
+    public static string GetEggName(int language, byte generation)
     {
-        <= 4 => GetEggName1234(0, language, generation),
-        _ => GetEggName(language),
-    };
+        // Check if we should use Chinese egg name from resources (for fan-made Chinese ROMs)
+        if (ParseSettings.Settings.ChineseSupport.Enabled)
+        {
+            // If the language is not Chinese but we want to use Chinese names, return Chinese egg name
+            if (language is not ((int)LanguageID.ChineseS or (int)LanguageID.ChineseT))
+            {
+                return generation switch
+                {
+                    <= 4 => GetEggName1234(0, (int)LanguageID.ChineseS, generation),
+                    _ => GetEggName((int)LanguageID.ChineseS),
+                };
+            }
+        }
+
+        return generation switch
+        {
+            <= 4 => GetEggName1234(0, language, generation),
+            _ => GetEggName(language),
+        };
+    }
 
     private static string GetSpeciesName1234(ushort species, int language, byte generation)
     {
@@ -357,3 +397,4 @@ public static class SpeciesName
         return false;
     }
 }
+

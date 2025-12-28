@@ -9,6 +9,7 @@ namespace PKHeX.Core;
 public sealed class LegalitySettings
 {
     public BulkAnalysisSettings Bulk { get; set; } = new();
+    public ChineseSupportSettings ChineseSupport { get; set; } = new();
     public FramePatternSettings FramePattern { get; set; } = new();
     public GameSpecificSettings Game { get; set; } = new();
     public HandlerSettings Handler { get; set; } = new();

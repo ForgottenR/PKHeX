@@ -96,7 +96,7 @@ public sealed class NicknameVerifier : Verifier
 
         if (string.IsNullOrWhiteSpace(encounterNickname))
         {
-            if (n is WC8 {IsHOMEGift: true})
+            if (n is WC8 { IsHOMEGift: true })
             {
                 VerifyHomeGiftNickname(data, enc, pk, nickname);
                 return;
@@ -139,7 +139,7 @@ public sealed class NicknameVerifier : Verifier
             return;
 
         // Can't nickname everything.
-        if (enc.Species == (int) Species.Melmetal)
+        if (enc.Species == (int)Species.Melmetal)
         {
             data.AddLine(GetInvalid(EncGiftNicknamed));
             return;
@@ -173,8 +173,13 @@ public sealed class NicknameVerifier : Verifier
             }
             if (pk.Format <= 7 && StringConverter.HasEastAsianScriptCharacters(nickname) && pk is not PB7) // East Asian Scripts
             {
-                data.AddLine(GetInvalid(NickInvalidChar));
-                return true;
+                // Allow Chinese characters if Chinese support is enabled or if the language is Chinese
+                var isChineseLanguage = pk.Language is (int)LanguageID.ChineseS or (int)LanguageID.ChineseT;
+                if (!isChineseLanguage && !ParseSettings.Settings.ChineseSupport.Enabled)
+                {
+                    data.AddLine(GetInvalid(NickInvalidChar));
+                    return true;
+                }
             }
             if (nickname.Length > Legal.GetMaxLengthNickname(enc.Generation, (LanguageID)pk.Language))
             {
@@ -223,7 +228,7 @@ public sealed class NicknameVerifier : Verifier
     private static int GetForeignNicknameLength(PKM pk, IEncounterTemplate match, byte origin)
     {
         // HOME gifts already verified prior to reaching here.
-        System.Diagnostics.Debug.Assert(match is not WC8 {IsHOMEGift:true});
+        System.Diagnostics.Debug.Assert(match is not WC8 { IsHOMEGift: true });
 
         int length = 0;
         if (origin is (4 or 5 or 6 or 7) && match.IsEgg && pk.WasTradedEgg)
@@ -270,7 +275,7 @@ public sealed class NicknameVerifier : Verifier
         // Starting in Generation 8, hatched language-traded eggs will take the Language from the trainer that hatched it.
         // Also in Generation 8, evolving in a foreign language game will retain the original language as the source for the newly evolved species name.
         // Transferring from Gen7->Gen8 realigns the Nickname string to the Language, if not nicknamed.
-        bool canHaveAnyLanguage = format <= 7 && (enc.Species != species || pk.WasTradedEgg || enc is WC7 {IsAshGreninja: true}) && !pk.GG;
+        bool canHaveAnyLanguage = format <= 7 && (enc.Species != species || pk.WasTradedEgg || enc is WC7 { IsAshGreninja: true }) && !pk.GG;
         if (canHaveAnyLanguage && !SpeciesName.IsNicknamedAnyLanguage(species, nickname, context))
             return true;
 
@@ -460,7 +465,32 @@ public sealed class NicknameVerifier : Verifier
     private static void VerifyNickname(LegalityAnalysis data, IFixedNickname fn, int language)
     {
         var pk = data.Entity;
-        var result = fn.IsNicknameMatch(pk, pk.Nickname, language)
+        var pkNickname = pk.Nickname;
+        var isMatch = fn.IsNicknameMatch(pk, pkNickname, language);
+
+        // For Gen4 with Chinese support enabled, if the first match failed and we have Chinese characters,
+        // try matching using the raw bytes (which contain the original encoding values)
+        if (!isMatch && pk.Format == 4 && ParseSettings.Settings.ChineseSupport.Enabled && StringConverter.HasEastAsianScriptCharacters(pkNickname))
+        {
+            var wasEnabled = ParseSettings.Settings.ChineseSupport.Enabled;
+            ParseSettings.Settings.ChineseSupport.Enabled = false;
+
+            try
+            {
+                // Load the string again with Chinese support disabled to get original language characters
+                Span<char> originalLangNickname = stackalloc char[pk.TrashCharCountNickname];
+                int originalLen = pk.LoadString(pk.NicknameTrash, originalLangNickname);
+                originalLangNickname = originalLangNickname[..originalLen];
+
+                isMatch = fn.IsNicknameMatch(pk, originalLangNickname.ToString(), language);
+            }
+            finally
+            {
+                ParseSettings.Settings.ChineseSupport.Enabled = wasEnabled;
+            }
+        }
+
+        var result = isMatch
             ? GetValid(CheckIdentifier.Nickname, EncTradeUnchanged)
             : Get(CheckIdentifier.Nickname, ParseSettings.Settings.Nickname.NicknamedTrade(data.EncounterOriginal.Context), EncTradeChangedNickname);
         data.AddLine(result);
@@ -473,7 +503,33 @@ public sealed class NicknameVerifier : Verifier
         int len = pk.LoadString(pk.OriginalTrainerTrash, trainer);
         trainer = trainer[..len];
 
-        if (!ft.IsTrainerMatch(pk, trainer, language))
+        var isMatch = ft.IsTrainerMatch(pk, trainer, language);
+
+        // For Gen4 with Chinese support enabled, if the first match failed and we have Chinese characters,
+        // try matching using the raw bytes (which contain the original encoding values)
+        if (!isMatch && pk.Format == 4 && ParseSettings.Settings.ChineseSupport.Enabled && StringConverter.HasEastAsianScriptCharacters(trainer))
+        {
+            // Convert characters back to original Gen4 encoding values, then back to expected language characters
+            // by temporarily disabling Chinese support
+            var wasEnabled = ParseSettings.Settings.ChineseSupport.Enabled;
+            ParseSettings.Settings.ChineseSupport.Enabled = false;
+
+            try
+            {
+                // Load the string again with Chinese support disabled to get original language characters
+                Span<char> originalLangTrainer = stackalloc char[pk.TrashCharCountTrainer];
+                int originalLen = pk.LoadString(pk.OriginalTrainerTrash, originalLangTrainer);
+                originalLangTrainer = originalLangTrainer[..originalLen];
+
+                isMatch = ft.IsTrainerMatch(pk, originalLangTrainer, language);
+            }
+            finally
+            {
+                ParseSettings.Settings.ChineseSupport.Enabled = wasEnabled;
+            }
+        }
+
+        if (!isMatch)
             data.AddLine(GetInvalid(CheckIdentifier.Trainer, EncTradeChangedOT));
     }
 }

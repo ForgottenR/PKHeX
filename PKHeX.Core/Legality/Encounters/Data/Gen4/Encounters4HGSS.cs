@@ -16,7 +16,23 @@ internal static class Encounters4HGSS
     internal static readonly EncounterStatic4Pokewalker[] Encounter_PokeWalker = EncounterStatic4Pokewalker.GetAll(Util.GetBinaryResource("encounter_walker4.pkl"));
 
     private const string tradeHGSS = "tradehgss";
-    private static readonly string[][] TradeNames = Util.GetLanguageStrings8(tradeHGSS);
+    private static readonly string[][] TradeNames = LoadTradeNamesWithChinese();
+
+    private static string[][] LoadTradeNamesWithChinese()
+    {
+        var names = Util.GetLanguageStrings8(tradeHGSS);
+        // Add Chinese support for fan-translated ROMs
+        var chineseNames = Util.GetStringList(tradeHGSS, "zh-Hans");
+        if (chineseNames.Length > 0)
+        {
+            var extended = new string[11][];
+            System.Array.Copy(names, extended, names.Length);
+            extended[9] = chineseNames; // ChineseS
+            extended[10] = chineseNames; // ChineseT (use simplified for now)
+            return extended;
+        }
+        return names;
+    }
 
     #region Static Encounter/Gift Tables
 
