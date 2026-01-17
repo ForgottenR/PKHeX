@@ -1,0 +1,37 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "🚀 Launch PKHeX.Avalonia (Debug)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-avalonia",
+      "program": "dotnet",
+      "args": ["run", "--project", "${workspaceFolder}/PKHeX.Avalonia/PKHeX.Avalonia.csproj", "--configuration", "Debug", "--no-build"],
+      "cwd": "${workspaceFolder}",
+      "stopAtEntry": false,
+      "console": "internalConsole",
+      "internalConsoleOptions": "openOnSessionStart",
+      "enableStepFiltering": false,
+      "justMyCode": false
+    },
+    {
+      "name": "📦 Launch PKHeX.Avalonia (Release)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-avalonia-release",
+      "program": "dotnet",
+      "args": ["run", "--project", "${workspaceFolder}/PKHeX.Avalonia/PKHeX.Avalonia.csproj", "--configuration", "Release", "--no-build"],
+      "cwd": "${workspaceFolder}",
+      "stopAtEntry": false,
+      "console": "internalConsole"
+    },
+    {
+      "name": "🐛 Attach to Avalonia Process",
+      "type": "coreclr",
+      "request": "attach",
+      "processId": "${command:pickProcess}",
+      "justMyCode": false
+    }
+  ]
+}

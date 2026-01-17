@@ -1,6 +1,7 @@
-using System.Drawing;
+using SkiaSharp;
 using PKHeX.Core;
 using PKHeX.Drawing.Misc.Properties;
+using PKHeX.Drawing;
 using PKHeX.Drawing.PokeSprite;
 
 namespace PKHeX.Drawing.Misc;
@@ -14,10 +15,10 @@ public static class MysteryGiftSpriteUtil
     /// Gets the sprite image for the specified <see cref="MysteryGift"/>.
     /// </summary>
     /// <param name="gift">The mystery gift to get the sprite for.</param>
-    /// <returns>A <see cref="Bitmap"/> representing the sprite image.</returns>
-    public static Bitmap Sprite(this MysteryGift gift) => GetSprite(gift);
+    /// <returns>A <see cref="SKBitmap"/> representing the sprite image.</returns>
+    public static SKBitmap Sprite(this MysteryGift gift) => GetSprite(gift);
 
-    private static Bitmap GetSprite(MysteryGift gift)
+    private static SKBitmap GetSprite(MysteryGift gift)
     {
         if (gift.IsEmpty)
             return SpriteUtil.Spriter.None;
@@ -30,7 +31,7 @@ public static class MysteryGiftSpriteUtil
         return img;
     }
 
-    private static Bitmap GetBaseImage(MysteryGift gift)
+    private static SKBitmap GetBaseImage(MysteryGift gift)
     {
         if (gift is { IsEgg: true, Species: (int)Species.Manaphy }) // Manaphy Egg
             return SpriteUtil.GetMysteryGiftPreviewPoke(gift);
@@ -42,8 +43,8 @@ public static class MysteryGiftSpriteUtil
             var item = (ushort)gift.ItemID;
             if (ItemStorage7USUM.GetCrystalHeld(item, out var value))
                 item = value;
-            return SpriteUtil.GetItemSprite(item) ?? Resources.Bag_Key;
+            return SpriteUtil.GetItemSprite(item) ?? ImageUtil.GetSKBitmap(Resources.Bag_Key);
         }
-        return PokeSprite.Properties.Resources.b_unknown;
+        return ImageUtil.GetSKBitmap(PokeSprite.Properties.Resources.b_unknown);
     }
 }

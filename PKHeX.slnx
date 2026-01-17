@@ -11,5 +11,5 @@
   <Project Path="PKHeX.Drawing.Misc/PKHeX.Drawing.Misc.csproj" />
   <Project Path="PKHeX.Drawing.PokeSprite/PKHeX.Drawing.PokeSprite.csproj" />
   <Project Path="PKHeX.Drawing/PKHeX.Drawing.csproj" />
-  <Project Path="PKHeX.WinForms/PKHeX.WinForms.csproj" />
+  <Project Path="PKHeX.Avalonia/PKHeX.Avalonia.csproj" />
 </Solution>

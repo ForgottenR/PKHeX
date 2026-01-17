@@ -1,0 +1,190 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PKHeX.Avalonia.ViewModels"
+        x:Class="PKHeX.Avalonia.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="PKHeX"
+        Width="864" Height="393"
+        MinWidth="864" MinHeight="393"
+        MaxWidth="864" MaxHeight="393"
+        WindowStartupLocation="CenterScreen"
+        CanResize="False">
+
+  <Design.DataContext>
+    <vm:MainWindowViewModel />
+  </Design.DataContext>
+
+  <Grid RowDefinitions="25,25,*">
+    <!-- 菜单栏 -->
+    <Menu Grid.Row="0" 
+          Name="menuStrip1" 
+          Background="Transparent"
+          Margin="0">
+      <MenuItem Header="_File">
+        <MenuItem Header="_Open..." 
+                  Name="Menu_Open" 
+                  Command="{Binding MainMenuOpenCommand}"
+                  InputGesture="Ctrl+O" />
+        <MenuItem Header="_Save PKM..." 
+                  Name="Menu_Save" 
+                  Command="{Binding MainMenuSaveCommand}"
+                  InputGesture="Ctrl+S" />
+        <MenuItem Header="E_xport SAV..." 
+                  Name="Menu_ExportSAV" 
+                  Command="{Binding ClickExportSAVCommand}"
+                  InputGesture="Ctrl+E" />
+        <Separator />
+        <MenuItem Header="_Quit" 
+                  Name="Menu_Exit" 
+                  Command="{Binding MainMenuExitCommand}"
+                  InputGesture="Ctrl+Q" />
+      </MenuItem>
+      
+      <MenuItem Header="_Tools">
+        <MenuItem Header="_Showdown">
+          <MenuItem Header="Import Set from Clipboard" 
+                    Name="Menu_ShowdownImportPKM"
+                    Command="{Binding ClickShowdownImportPKMCommand}"
+                    InputGesture="Ctrl+T" />
+          <MenuItem Header="Export Set to Clipboard" 
+                    Name="Menu_ShowdownExportPKM"
+                    Command="{Binding ClickShowdownExportPKMCommand}"
+                    InputGesture="Ctrl+Shift+T" />
+          <MenuItem Header="Export Party to Clipboard" 
+                    Name="Menu_ShowdownExportParty"
+                    Command="{Binding ClickShowdownExportPartyCommand}" />
+          <MenuItem Header="Export Current Box to Clipboard" 
+                    Name="Menu_ShowdownExportCurrentBox"
+                    Command="{Binding ClickShowdownExportCurrentBoxCommand}" />
+        </MenuItem>
+        <MenuItem Header="_Data">
+          <MenuItem Header="Load Boxes" 
+                    Name="Menu_LoadBoxes"
+                    Command="{Binding MainMenuBoxLoadCommand}" />
+          <MenuItem Header="Dump Boxes" 
+                    Name="Menu_DumpBoxes"
+                    Command="{Binding MainMenuBoxDumpCommand}" />
+          <MenuItem Header="Dump Box" 
+                    Name="Menu_DumpBox"
+                    Command="{Binding MainMenuBoxDumpSingleCommand}" />
+          <Separator />
+          <MenuItem Header="Box Data _Report" 
+                    Name="Menu_Report"
+                    Command="{Binding MainMenuBoxReportCommand}"
+                    InputGesture="Ctrl+R" />
+          <MenuItem Header="PKM _Database" 
+                    Name="Menu_Database"
+                    Command="{Binding MainMenuDatabaseCommand}"
+                    InputGesture="Ctrl+D" />
+          <MenuItem Header="_Mystery Gift Database" 
+                    Name="Menu_MGDatabase"
+                    Command="{Binding MainMenuMysteryDBCommand}"
+                    InputGesture="Ctrl+G" />
+          <MenuItem Header="E_ncounter Database" 
+                    Name="Menu_EncDatabase"
+                    Command="{Binding Menu_EncDatabaseCommand}"
+                    InputGesture="Ctrl+N" />
+          <Separator />
+          <MenuItem Header="Batch Editor" 
+                    Name="Menu_BatchEditor"
+                    Command="{Binding MainMenuBatchEditorCommand}"
+                    InputGesture="Ctrl+M" />
+        </MenuItem>
+        <MenuItem Header="Open _Folder" 
+                  Name="Menu_Folder"
+                  Command="{Binding MainMenuFolderCommand}"
+                  InputGesture="Ctrl+F" />
+      </MenuItem>
+      
+      <MenuItem Header="_Options">
+        <MenuItem Header="_Language">
+          <ComboBox Name="CB_MainLanguage"
+                    Width="120"
+                    SelectedIndex="{Binding LanguageIndex}" />
+        </MenuItem>
+        <Separator />
+        <MenuItem Header="Undo Last Change" 
+                  Name="Menu_Undo"
+                  Command="{Binding ClickUndoCommand}"
+                  InputGesture="Ctrl+U"
+                  IsEnabled="False" />
+        <MenuItem Header="Redo Last Change" 
+                  Name="Menu_Redo"
+                  Command="{Binding ClickRedoCommand}"
+                  InputGesture="Ctrl+Y"
+                  IsEnabled="False" />
+        <Separator />
+        <MenuItem Header="_Settings" 
+                  Name="Menu_Settings"
+                  Command="{Binding MainMenuSettingsCommand}"
+                  InputGesture="Ctrl+Shift+S" />
+        <MenuItem Header="About _PKHeX" 
+                  Name="Menu_About"
+                  Command="{Binding MainMenuAboutCommand}"
+                  InputGesture="Ctrl+P" />
+      </MenuItem>
+    </Menu>
+    
+    <!-- 更新链接标签 -->
+    <TextBlock Grid.Row="1"
+               Name="L_UpdateAvailable"
+               Text="You are using the latest version!"
+               IsVisible="False"
+               IsEnabled="False"
+               HorizontalAlignment="Right"
+               VerticalAlignment="Center"
+               Margin="0,0,10,0" />
+
+    <!-- 主内容区域 - 使用Grid替代SplitView来严格复刻WinForms布局 -->
+    <Grid Grid.Row="2" Margin="0">
+      <!-- 两列布局，模仿WinForms的SplitContainer -->
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="400"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      
+      <!-- 左侧面板 -->
+      <Grid Grid.Column="0" MinWidth="400">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="56"/>
+          <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <!-- 拖动区域和合法性指示器 -->
+        <Grid Grid.Row="0" Height="56">
+          <Image Name="PB_Legal"
+                 Width="24" Height="24"
+                 HorizontalAlignment="Left"
+                 VerticalAlignment="Top"
+                 Margin="0,0,0,0" />
+          <Image Name="dragout"
+                 Width="72" Height="56"
+                 HorizontalAlignment="Left"
+                 Margin="24,0,0,0"
+                 VerticalAlignment="Top" />
+        </Grid>
+        
+        <!-- PKM编辑器占位符 -->
+        <Grid Grid.Row="1" 
+              Background="LightGray"
+              Margin="0,0,0,0">
+          <TextBlock Text="PKMEditor Placeholder"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     Opacity="0.5" />
+        </Grid>
+      </Grid>
+      
+      <!-- 右侧面板 -->
+      <Grid Grid.Column="1" Margin="0,0,1,3">
+        <Grid.Background>
+          <SolidColorBrush Color="LightGray" Opacity="0.3"/>
+        </Grid.Background>
+        <TextBlock Text="SAVEditor Placeholder"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Opacity="0.5" />
+      </Grid>
+    </Grid>
+  </Grid>
+</Window>
